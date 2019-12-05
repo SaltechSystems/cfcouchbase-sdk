@@ -3118,8 +3118,13 @@ component serializable="false" accessors="true" {
     if( isObject( arguments.config.networkLatencyMetricsCollectorConfig ) ) {
       builder = builder.networkLatencyMetricsCollectorConfig( arguments.config.networkLatencyMetricsCollectorConfig );
     }
+    // if( isObject( arguments.config.defaultMetricsLoggingConsumer ) ) {
+    //   builder = builder.defaultMetricsLoggingConsumer( arguments.config.defaultMetricsLoggingConsumer );
+    // }
     if( isObject( arguments.config.defaultMetricsLoggingConsumer ) ) {
-      builder = builder.defaultMetricsLoggingConsumer( arguments.config.defaultMetricsLoggingConsumer );
+      builder = builder.defaultMetricsLoggingConsumer( javaCast("boolean", true), arguments.config.defaultMetricsLoggingConsumer );
+    } else if ( len( arguments.config.defaultMetricsLoggingConsumer ) ) {
+      builder = builder.defaultMetricsLoggingConsumer( javaCast("boolean", true),  CouchbaseLogLevel.valueOf(arguments.config.defaultMetricsLoggingConsumer));
     }
     return builder.build();
   }
@@ -3304,5 +3309,36 @@ component serializable="false" accessors="true" {
   public any function getUtility() {
     return variables.util;
   }
+  
+  /**
+   * Runs a simple full-text seach query against the couchbase database. If ids is present, the query will become a conjuction query
+   * filtering results based on the ids in the array. 
+   *
+   * @keyword.hint The keyword that full text search will look for
+   * @indexName The index that full text search will run on
+   * @ids The ids of documents for limiting search to ( default is empty means it will look for _all);
+   * @limit The number of results (if not provided, it defaults to 10)
+   */
+  public any function simpleFTSQuery(required string keyword, required string indexName, array ids = [], number limit = 10) {
+    var searchQuery = newJava( "com.couchbase.client.java.search.SearchQuery" );
+    
+    //create a match query based on the keyword
+    var query = searchQuery.match(arguments.keyword);
 
+    if (isEmpty(ids)) {
+      // CAREFULL!! it means that there is no limit on the results.
+      var simpleQuery = searchQuery.init(arguments.indexName, query);
+      
+      return variables.couchbaseBucket.query(simpleQuery.limit(limit));
+    }
+
+    var where = searchQuery.docId(ids);
+    var conjuction = searchQuery.conjuncts([query, where]);
+
+    var ftsQuery = searchQuery.init(arguments.indexName, conjuction);
+    
+    var result = variables.couchbaseBucket.query(ftsQuery.limit(limit).highlight());
+
+    return result;
+  }
 }

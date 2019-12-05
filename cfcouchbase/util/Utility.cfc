@@ -65,13 +65,14 @@ public string function getDataType( required any value ) {
 * @id.hint The ID to normalize, or an array of IDs
 */
 public any function normalizeID( required any id ) {
+  // Laura 7/26/19 - Removed lcases from the caseSensitive checks 
   if( isSimpleValue( arguments.id ) ) {
-    return trim( variables.config.caseSensitiveKeys ? arguments.id : lCase( arguments.id ) );
+    return trim( variables.config.caseSensitiveKeys ? arguments.id : ( arguments.id ) );
   }
   else {
     var i = 1;
     for( var doc_id in arguments.id ) {
-      arguments['id'][ i ] = trim( variables.config.caseSensitiveKeys ? doc_id : lCase( doc_id ) );
+      arguments['id'][ i ] = trim( variables.config.caseSensitiveKeys ? doc_id : ( doc_id ) );
       i++;
     }
     return arguments.id;

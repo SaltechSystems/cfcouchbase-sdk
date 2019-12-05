@@ -223,18 +223,17 @@ component accessors="true" {
         type="CouchbaseClient.N1qlParamException"
       );
     }
+    
     // is it a number?
-    if( isNumeric( castValue ) ) {
-      // is it a float / double?
-      if( find( ".", castValue ) ) {
-        castValue = javaCast( "double", castValue );
-      }
-      else {
-        castValue = javaCast( "long", castValue );
-      }
+    // Changing so the string numbers don't accidentally get compared as numeric objects
+    if( refind( "^[+-]?([0-9]*[.])?[0-9]+d$", castValue ) ) {
+      castValue = javaCast( "double", spanExcluding(castValue,'d'));
+    }
+    else if( refind( "^[+-]?([0-9]*[.])?[0-9]+l$", castValue ) ) {
+      castValue = javaCast( "long", spanExcluding(castValue,'l'));
     }
     // is it a boolean?
-    else if( isBoolean( castValue ) ) {
+    else if( isBoolean( castValue ) and not isNumeric( castValue ) ) {
       castValue = javaCast( "boolean", castValue );
     }
     else {
